@@ -1,56 +1,92 @@
+<script context="module" lang="ts">
+  export type ChartData = {
+    data: { x: number; y: number }[];
+    label: string;
+    color?: string;
+    min?: number;
+    max?: number;
+  };
+</script>
+
 <script lang="ts">
-  import "chartist/dist/index.css";
-  import { LineChart, AutoScaleAxis, Interpolation } from "chartist";
+  import { Chart, type ChartDataset } from "chart.js/auto";
   import { onMount } from "svelte";
 
-  const generateDateTimes = (hours: number): number[] =>
-    Array.from(Array(hours).keys()).map(
-      (_, index) => new Date().getTime() - index * 60 * 60 * 1000
-    );
+  export let temperatureData: ChartData[];
+  export let humidityData: ChartData[] | undefined = undefined;
+  export let irrigationData: ChartData[] | undefined = undefined;
 
-  const generateTemperatureData = (timestamps: number[]) =>
-    timestamps.map((timestamp) => ({ x: timestamp, y: Math.random() * 100 }));
+  const id = (Math.random() + 1).toString(36).substring(7);
 
   onMount(() => {
-    const data = generateTemperatureData(generateDateTimes(5));
+    const ctx = document.getElementById(id) as HTMLCanvasElement;
 
-    console.log(data);
+    const chartData = temperatureData
+      .map(
+        (entry): ChartDataset => ({
+          type: "line",
+          label: entry.label,
+          data: entry.data,
+          cubicInterpolationMode: "monotone",
+          borderColor: entry.color,
+        })
+      )
+      .concat(
+        humidityData?.map((entry) => ({
+          type: "line",
+          label: entry.label,
+          data: entry.data,
+          cubicInterpolationMode: "monotone",
+          yAxisID: "y1",
+          borderColor: entry.color,
+        })) || [],
+        irrigationData?.map((entry) => ({
+          type: "bar",
+          label: entry.label,
+          data: entry.data,
+          cubicInterpolationMode: "monotone",
+          backgroundColor: entry.color,
+          yAxisID: "y2",
+        })) || []
+      );
 
-    new LineChart(
-      "#chart",
-      {
-        series: [data],
+    console.log(chartData);
+
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        datasets: chartData,
       },
-      {
-        axisX: {
-          type: AutoScaleAxis,
-          labelInterpolationFnc: (value, index) => {
-            if (index % 2 === 0) {
-              return new Date(value).toLocaleString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-            } else {
-              return null;
-            }
+      options: {
+        parsing: false,
+        scales: {
+          x: {
+            type: "linear",
           },
-          labelOffset: { x: -20, y: 0 },
+          y: {
+            type: "linear",
+          },
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
+            grid: {
+              drawOnChartArea: false,
+            },
+            min: 0,
+            max: 100,
+          },
+          y2: {
+            type: "linear",
+            display: false,
+            grid: {
+              drawOnChartArea: false,
+            },
+          },
         },
-        axisY: {
-          type: AutoScaleAxis,
-          divisor: 5,
-        },
-        fullWidth: true,
-        lineSmooth: Interpolation.simple({
-          fillHoles: true,
-        }),
-        chartPadding: {
-          right: 20,
-        },
-        low: 0,
-      }
-    );
+      },
+    });
   });
 </script>
 
-<div id="chart" style="height: 50vh; width: 50vw;" />
+<canvas {id} style="height: 20vh; min-width: 50vw;" />
