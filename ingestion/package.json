@@ -1,0 +1,11 @@
+{
+  "name": "ingestion",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Esa Niemi",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "aws-sdk": "^2.1391.0"
+  }
+}
