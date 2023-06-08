@@ -11,6 +11,7 @@
 <script lang="ts">
   import { Chart, type ChartDataset } from "chart.js/auto";
   import { onMount } from "svelte";
+  import "chartjs-adapter-luxon";
 
   export let temperatureData: ChartData[];
   export let humidityData: ChartData[] | undefined = undefined;
@@ -61,7 +62,7 @@
         parsing: false,
         scales: {
           x: {
-            type: "linear",
+            type: "time",
           },
           y: {
             type: "linear",
