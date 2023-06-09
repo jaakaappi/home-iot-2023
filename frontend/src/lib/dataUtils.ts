@@ -32,7 +32,7 @@ export const formatData = (
           y: parseFloat(row[dataLabelName]),
         }))
         .sort((row1, row2) => row1.x - row2.x),
-      label: groupName,
+      label: dataLabelName,
       color:
         colorArray[Object.keys(groupedData).length > 4 ? index : index * 2],
     })

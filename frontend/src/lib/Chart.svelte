@@ -15,7 +15,6 @@
 
   export let temperatureData: ChartData[];
   export let humidityData: ChartData[] | undefined = undefined;
-  export let irrigationData: ChartData[] | undefined = undefined;
 
   const id = (Math.random() + 1).toString(36).substring(7);
 
@@ -40,18 +39,8 @@
           cubicInterpolationMode: "monotone",
           yAxisID: "y1",
           borderColor: entry.color,
-        })) || [],
-        irrigationData?.map((entry) => ({
-          type: "bar",
-          label: entry.label,
-          data: entry.data,
-          cubicInterpolationMode: "monotone",
-          backgroundColor: entry.color,
-          yAxisID: "y2",
         })) || []
       );
-
-    console.log(chartData);
 
     new Chart(ctx, {
       type: "line",
@@ -63,9 +52,17 @@
         scales: {
           x: {
             type: "time",
+            title: {
+              display: true,
+              text: "Time",
+            },
           },
           y: {
             type: "linear",
+            title: {
+              display: true,
+              text: "Temperature C°",
+            },
           },
           y1: {
             type: "linear",
@@ -75,13 +72,9 @@
               drawOnChartArea: false,
             },
             min: 0,
-            max: 100,
-          },
-          y2: {
-            type: "linear",
-            display: false,
-            grid: {
-              drawOnChartArea: false,
+            title: {
+              display: true,
+              text: "Relative humidity %",
             },
           },
         },
