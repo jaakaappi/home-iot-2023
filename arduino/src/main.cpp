@@ -5,54 +5,42 @@
 #include <DHT.h>
 #include <HTTPClient.h>
 
+#define DATA_SEND_INTERVAL_MS 15 * 60 * 1000
+
 DHT dht = DHT(GPIO_NUM_23, DHT11);
-int lastDataIndex = 0;
-int lastReadingTimestamp = 0;
 int lastDataSentTimestamp = 0;
 
-class Data
+float measureAverageTemperature(int count)
 {
-public:
-  float temperature;
-  float humidity;
-  Data() {}
-  Data(float temperature, float humidity)
+  float readings = 0;
+  for (size_t i = 0; i < count; i++)
   {
-    this->temperature = temperature;
-    this->humidity = humidity;
+    readings += dht.readTemperature();
+    delay(100);
   }
-};
+  return readings / count;
+}
 
-Data readings[60] = {};
-
-void readData()
+float measureAverageHumidity(int count)
 {
-  float temperature = dht.readTemperature();
-  float humidity = dht.readHumidity();
-  Serial.print("temp ");
-  Serial.println(temperature);
-  Serial.print("hum ");
-  Serial.println(humidity);
-  readings[lastDataIndex] = Data(temperature, humidity);
-  lastDataIndex++;
+  float readings = 0;
+  for (size_t i = 0; i < count; i++)
+  {
+    readings += dht.readHumidity();
+  }
+  return readings / count;
 }
 
 void sendData()
 {
   digitalWrite(GPIO_NUM_2, HIGH);
-  Data averageData = Data(0.0f, 0.0f);
-  for (int i = 0; i < lastDataIndex; i++)
-  {
-    averageData.temperature += readings[i].temperature;
-    averageData.humidity += readings[i].humidity;
-  }
-  averageData.temperature /= lastDataIndex + 1;
-  averageData.humidity /= lastDataIndex + 1;
-  Serial.print("average temp ");
-  Serial.println(averageData.temperature);
-  Serial.print("average hum ");
-  Serial.println(averageData.humidity);
-  lastDataIndex = 0;
+  float temperature = measureAverageTemperature(10);
+  float humidity = measureAverageHumidity(10);
+
+  Serial.print("temp ");
+  Serial.println(temperature);
+  Serial.print("hum ");
+  Serial.println(humidity);
 
   WiFiClientSecure *client = new WiFiClientSecure;
   HTTPClient https;
@@ -62,10 +50,9 @@ void sendData()
   https.addHeader("authorization", API_AUTH_KEY);
 
   String json = "{";
-  json += String("\"sensorlocation\":") + "\"bathroom\"" + ",";
-  // json += String("\"sensorlocation\":") + "\"living room\"" + ",";
-  json += "\"temperature\":" + String(averageData.temperature) + ",";
-  json += "\"humidity\":" + String(averageData.humidity) + ",";
+  json += String("\"sensorlocation\":") + "\"living room\"" + ",";
+  json += "\"temperature\":" + String(temperature) + ",";
+  json += "\"humidity\":" + String(humidity) + ",";
   json += String("\"soilhumidity\":") + "null";
   json += "}";
 
@@ -128,19 +115,20 @@ void setup()
 
   dht.begin();
   Serial.println("DHT ready");
+  float temperature = measureAverageTemperature(10);
+  float humidity = measureAverageHumidity(10);
+  Serial.print("temp ");
+  Serial.println(temperature);
+  Serial.print("hum ");
+  Serial.println(humidity);
 }
 
 void loop()
 {
   ArduinoOTA.handle();
-  if (millis() > lastDataSentTimestamp + 60 * 1000)
+  if (millis() > lastDataSentTimestamp + DATA_SEND_INTERVAL_MS)
   {
     sendData();
     lastDataSentTimestamp = millis();
-  }
-  else if (millis() > lastReadingTimestamp + 1000)
-  {
-    readData();
-    lastReadingTimestamp = millis();
   }
 }
