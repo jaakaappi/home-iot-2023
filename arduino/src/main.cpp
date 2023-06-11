@@ -2,40 +2,24 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <config.hpp>
-#include <DHT.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
 #include <HTTPClient.h>
 
 #define DATA_SEND_INTERVAL_MS 15 * 60 * 1000
 
-DHT dht = DHT(GPIO_NUM_23, DHT11);
+Adafruit_BME280 bme;
+
 int lastDataSentTimestamp = 0;
-
-float measureAverageTemperature(int count)
-{
-  float readings = 0;
-  for (size_t i = 0; i < count; i++)
-  {
-    readings += dht.readTemperature();
-    delay(100);
-  }
-  return readings / count;
-}
-
-float measureAverageHumidity(int count)
-{
-  float readings = 0;
-  for (size_t i = 0; i < count; i++)
-  {
-    readings += dht.readHumidity();
-  }
-  return readings / count;
-}
+unsigned long previousMillis = 0;
+unsigned long interval = 30000;
 
 void sendData()
 {
   digitalWrite(GPIO_NUM_2, HIGH);
-  float temperature = measureAverageTemperature(10);
-  float humidity = measureAverageHumidity(10);
+  bme.takeForcedMeasurement();
+  float temperature = bme.readTemperature();
+  float humidity = bme.readHumidity();
 
   Serial.print("temp ");
   Serial.println(temperature);
@@ -113,10 +97,11 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  dht.begin();
-  Serial.println("DHT ready");
-  float temperature = measureAverageTemperature(10);
-  float humidity = measureAverageHumidity(10);
+  bme.begin();
+  Serial.println("BME280 ready");
+  bme.takeForcedMeasurement();
+  float temperature = bme.readTemperature();
+  float humidity = bme.readHumidity();
   Serial.print("temp ");
   Serial.println(temperature);
   Serial.print("hum ");
@@ -125,6 +110,16 @@ void setup()
 
 void loop()
 {
+  unsigned long currentMillis = millis();
+  // if WiFi is down, try reconnecting
+  if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >= interval))
+  {
+    Serial.print(millis());
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.reconnect();
+    previousMillis = currentMillis;
+  }
   ArduinoOTA.handle();
   if (millis() > lastDataSentTimestamp + DATA_SEND_INTERVAL_MS)
   {
