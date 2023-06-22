@@ -1,4 +1,4 @@
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({});
 
@@ -9,8 +9,16 @@ export const handler = async (event) => {
   )
     throw new Error("Bad Authorization header");
 
-  let command = new ScanCommand({
+  let command = new QueryCommand({
     TableName: "home-iot-2023-data",
+    IndexName: "sensorlocation-timestamp-index",
+    KeyConditionExpression: "sensorlocation = :location",
+    ScanIndexForward: false,
+    ExpressionAttributeValues: {
+      ":location": {
+        S: "living room",
+      },
+    },
   });
 
   //console.log(event);
