@@ -18,19 +18,14 @@ export const handler = async (event) => {
    *
    * temperature: number
    * humidity: number
-   * soil humidity: number | null
    * sensor location: string
    */
 
-  const fields = ["temperature", "humidity", "soilhumidity", "sensorlocation"];
+  const fields = ["temperature", "humidity", "sensorlocation"];
   fields.map((field) => {
     if (!Object.hasOwn(data, field))
       throw new Error(`Data is missing field ${field}`);
   });
-
-  const soilhumidity = data.soilhumidity
-    ? { soilhumidity: { N: data.soilhumidity.toString() } }
-    : {};
 
   const command = new PutItemCommand({
     TableName: "home-iot-2023-data",
@@ -38,7 +33,6 @@ export const handler = async (event) => {
       timestamp: { N: Date.now().toString() },
       temperature: { N: data.temperature.toString() },
       humidity: { N: data.humidity.toString() },
-      ...soilhumidity,
       sensorlocation: { S: data.sensorlocation.toString() },
     },
   });
