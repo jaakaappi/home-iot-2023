@@ -34,8 +34,7 @@ void sendData()
   String json = "{";
   json += String("\"sensorlocation\":") + "\"living room\"" + ",";
   json += "\"temperature\":" + String(temperature) + ",";
-  json += "\"humidity\":" + String(humidity) + ",";
-  json += String("\"soilhumidity\":") + "null";
+  json += "\"humidity\":" + String(humidity);
   json += "}";
 
   Serial.println(json);
