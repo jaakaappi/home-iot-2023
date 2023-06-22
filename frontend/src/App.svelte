@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Chart from "./lib/Chart.svelte";
-  import { formatData } from "./lib/dataUtils";
+  import { formatData, type RawData } from "./lib/dataUtils";
+  import Selector from "./lib/Selector.svelte";
 
   const temperatureColors = [
     "#df5700",
@@ -31,26 +32,39 @@
 
   export let temperatureData = [];
   export let humidityData = [];
+  export let selectedTimeRange = 4 * 24;
+  let data: RawData[] = [];
 
-  onMount(async function () {
-    const response = await fetch(import.meta.env.VITE_DATA_API_URL, {
-      mode: "cors",
-      headers: {
-        authorization: import.meta.env.VITE_API_KEY,
-      },
-    });
-    const data = await response.json();
+  $: {
+    temperatureData = [];
+    fetch(
+      import.meta.env.VITE_DATA_API_URL +
+        (selectedTimeRange !== 0
+          ? "?" + new URLSearchParams({ limit: selectedTimeRange.toString() })
+          : ""),
+      {
+        mode: "cors",
+        headers: {
+          authorization: import.meta.env.VITE_API_KEY,
+        },
+      }
+    )
+      .then((response) => response.json())
+      .then((responseData) => (data = responseData));
+  }
 
+  $: {
     temperatureData = formatData(data, "temperature", temperatureColors);
     humidityData = formatData(data, "humidity", humidityColors);
-  });
+  }
 </script>
 
 <div>
-  <div>
-    <p>🏠Home</p>
-    {#if temperatureData.length > 0}
-      <Chart {temperatureData} {humidityData} />
-    {/if}
-  </div>
+  <p>🏠Home</p>
+  <Selector bind:selectedValue={selectedTimeRange} />
+  {#if temperatureData.length > 0}
+    <Chart {temperatureData} {humidityData} />
+  {:else}
+    <p>Loading...</p>
+  {/if}
 </div>
