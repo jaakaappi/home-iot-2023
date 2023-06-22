@@ -20,18 +20,16 @@ void sendData()
   bme.takeForcedMeasurement();
   float temperature = bme.readTemperature();
   float humidity = bme.readHumidity();
-
   Serial.print("temp ");
   Serial.println(temperature);
   Serial.print("hum ");
   Serial.println(humidity);
 
-  WiFiClientSecure *client = new WiFiClientSecure;
-  HTTPClient https;
-  client->setCACert(CA_CERT);
-  https.begin(*client, API_URL);
-  https.addHeader("Content-Type", "application/json");
-  https.addHeader("authorization", API_AUTH_KEY);
+  WiFiClient *client = new WiFiClient;
+  HTTPClient http;
+  http.begin(*client, API_URL);
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader("authorization", API_AUTH_KEY);
 
   String json = "{";
   json += String("\"sensorlocation\":") + "\"living room\"" + ",";
@@ -42,10 +40,10 @@ void sendData()
 
   Serial.println(json);
 
-  int httpResponseCode = https.POST(json);
+  int httpResponseCode = http.POST(json);
   delay(100);
   Serial.println("Response: " + String(httpResponseCode));
-  https.end();
+  http.end();
   digitalWrite(GPIO_NUM_2, LOW);
 }
 
@@ -62,7 +60,7 @@ void setup()
   {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
-    ESP.restart();
+    WiFi.reconnect();
   }
 
   // ArduinoOTA.setPassword("esp32iot");
@@ -124,6 +122,9 @@ void loop()
   if (millis() > lastDataSentTimestamp + DATA_SEND_INTERVAL_MS)
   {
     sendData();
+
+    Serial.print("Millis since last measurement: ");
+    Serial.println(millis() - lastDataSentTimestamp);
     lastDataSentTimestamp = millis();
   }
 }
